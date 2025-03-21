@@ -146,6 +146,6 @@ GUI 导出的配置文件也可以给命令行使用，两者的格式是一样�
 
 - [ ] 流量特征去除
 
-## 原uo5项目
+## 原suo5项目
 再次感谢原作者这款极其优秀的工具
 - [https://github.com/zema1/suo5](https://github.com/zema1/suo5)

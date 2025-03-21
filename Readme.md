@@ -1,8 +1,8 @@
-<h1 style="text-align:center">bs5 (better suo5)</h1>
+<h1 align="center">bs5 (better suo5)</h1>
 
-<p style="text-align:center">一款高性能 HTTP 代理隧道工具</p>
+<p align="center">一款高性能 HTTP 代理隧道工具</p>
 
-<div style="text-align:center">
+<div align="center">
 
 <b>本项目为suo5二开，旨在用标准项目代码实现suo5的基本功能，并去除suo5的流量特征</b>
 

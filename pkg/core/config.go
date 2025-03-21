@@ -1,10 +1,10 @@
 package core
 
 import (
-	"bettersuo5/pkg/netrans"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/OmagariHare/bs5/pkg/netrans"
 	"github.com/chainreactors/proxyclient"
 	"github.com/gobwas/glob"
 	log "github.com/kataras/golog"

@@ -1,10 +1,10 @@
 package core
 
 import (
-	netrans2 "bettersuo5/pkg/netrans"
 	"bytes"
 	"context"
 	"fmt"
+	netrans2 "github.com/OmagariHare/bs5/pkg/netrans"
 	log "github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"io"

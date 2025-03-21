@@ -1,10 +1,10 @@
 package ctrl
 
 import (
-	suo6 "bettersuo5/pkg/core"
-	"bettersuo5/pkg/netrans"
 	"context"
 	"fmt"
+	suo6 "github.com/OmagariHare/bs5/pkg/core"
+	"github.com/OmagariHare/bs5/pkg/netrans"
 	"github.com/pkg/errors"
 	"io"
 	"net"

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"bettersuo5/pkg/core"
+	"github.com/OmagariHare/bs5/pkg/core"
 	"github.com/go-gost/gosocks5"
 	"github.com/go-gost/gosocks5/client"
 	"github.com/go-gost/gosocks5/server"

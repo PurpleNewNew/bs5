@@ -1,4 +1,4 @@
-module bettersuo5
+module github.com/OmagariHare/bs5
 
 go 1.24.1
 

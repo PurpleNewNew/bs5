@@ -1,10 +1,10 @@
 package core
 
 import (
-	"bettersuo5/pkg/netrans"
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/OmagariHare/bs5/pkg/netrans"
 	"strconv"
 )
 

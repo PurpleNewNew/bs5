@@ -1,11 +1,11 @@
 package main
 
 import (
-	suo6 "bettersuo5/pkg/core"
-	"bettersuo5/pkg/ctrl"
 	"context"
 	"encoding/json"
 	"fmt"
+	suo6 "github.com/OmagariHare/bs5/pkg/core"
+	"github.com/OmagariHare/bs5/pkg/ctrl"
 	"os"
 	"os/signal"
 	"strings"

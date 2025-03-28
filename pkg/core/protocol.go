@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// BuildBody 将map[string][]byte序列化成字节数组，并封装成帧
 func BuildBody(m map[string][]byte) []byte {
 	return netrans.NewDataFrame(Marshal(m)).MarshalBinary()
 }
@@ -19,6 +20,7 @@ const (
 	ActionHeartbeat byte = 0x03
 )
 
+// NewActionCreate 把id、地址、端口、重定向地址封装成map[string][]byte，并返回
 func NewActionCreate(id, addr string, port uint16, redirect string) map[string][]byte {
 	m := make(map[string][]byte)
 	m["ac"] = []byte{ActionCreate}
@@ -31,17 +33,19 @@ func NewActionCreate(id, addr string, port uint16, redirect string) map[string][
 	return m
 }
 
+// NewActionData 把id、数据、重定向地址封装成map[string][]byte，并返回
 func NewActionData(id string, data []byte, redirect string) map[string][]byte {
 	m := make(map[string][]byte)
 	m["ac"] = []byte{ActionData}
 	m["id"] = []byte(id)
-	m["dt"] = []byte(data)
+	m["dt"] = data
 	if len(redirect) != 0 {
 		m["r"] = []byte(redirect)
 	}
 	return m
 }
 
+// NewDelete 把id封装成map[string][]byte，并返回
 func NewDelete(id string, redirect string) map[string][]byte {
 	m := make(map[string][]byte)
 	m["ac"] = []byte{ActionDelete}
@@ -52,6 +56,7 @@ func NewDelete(id string, redirect string) map[string][]byte {
 	return m
 }
 
+// NewHeartbeat 把id封装成map[string][]byte，并返回
 func NewHeartbeat(id string, redirect string) map[string][]byte {
 	m := make(map[string][]byte)
 	m["ac"] = []byte{ActionHeartbeat}
@@ -77,6 +82,7 @@ func Marshal(m map[string][]byte) []byte {
 	return buf.Bytes()
 }
 
+// Unmarshal 从字节数组bs中解析出data的键值对并返回
 func Unmarshal(bs []byte) (map[string][]byte, error) {
 	m := make(map[string][]byte)
 	total := len(bs)

@@ -50,6 +50,7 @@ type Suo5Config struct {
 	GuiLog                  io.Writer                            `json:"-"`
 }
 
+// Parse 传递配置
 func (s *Suo5Config) Parse() error {
 	if err := s.parseExcludeDomain(); err != nil {
 		return err
@@ -57,6 +58,7 @@ func (s *Suo5Config) Parse() error {
 	return s.parseHeader()
 }
 
+// 解析排除域名
 func (s *Suo5Config) parseExcludeDomain() error {
 	s.ExcludeGlobs = make([]glob.Glob, 0)
 	for _, domain := range s.ExcludeDomain {
@@ -69,6 +71,7 @@ func (s *Suo5Config) parseExcludeDomain() error {
 	return nil
 }
 
+// 解析Header
 func (s *Suo5Config) parseHeader() error {
 	s.Header = make(http.Header)
 	for _, value := range s.RawHeader {

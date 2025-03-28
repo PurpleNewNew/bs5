@@ -26,6 +26,7 @@ type TimeoutReader struct {
 	cancel func()
 }
 
+// NewTimeoutReader 创建一个带超时的读取器
 func NewTimeoutReader(ctx context.Context, r io.Reader, timeout time.Duration) io.Reader {
 	return NewTimeoutReadCloser(ctx, io.NopCloser(r), timeout)
 }

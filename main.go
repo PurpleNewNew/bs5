@@ -19,7 +19,7 @@ var Version = "v0.0.0"
 func main() {
 	log.Default.SetTimeFormat("01-02 15:04")
 	app := cli.NewApp()
-	app.Name = "core"
+	app.Name = "bs5"
 	app.Usage = "A high-performance http tunnel"
 	app.Version = Version
 
@@ -178,7 +178,7 @@ func Action(c *cli.Context) error {
 	var username, password string
 	if auth == "" {
 		if !noAuth {
-			username = "core"
+			username = "bs5"
 			password = suo6.RandString(8)
 		}
 	} else {

@@ -15,6 +15,7 @@ import (
 	log "github.com/kataras/golog"
 )
 
+// socks5Handler socks5 处理器结构体
 type socks5Handler struct {
 	*suo6.Suo5Client
 
@@ -23,6 +24,7 @@ type socks5Handler struct {
 	selector gosocks5.Selector
 }
 
+// Handle 处理一个socks5 连接请求
 func (m *socks5Handler) Handle(conn net.Conn) error {
 	defer conn.Close()
 

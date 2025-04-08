@@ -1,8 +1,11 @@
-module github.com/OmagariHare/bs5
+module bs5
 
 go 1.24.1
 
+toolchain go1.24.2
+
 require (
+	github.com/OmagariHare/bs5 v0.0.0-20250408115140-b8b27ced29ac
 	github.com/chainreactors/proxyclient v1.0.2
 	github.com/go-gost/gosocks5 v0.4.2
 	github.com/gobwas/glob v0.2.3

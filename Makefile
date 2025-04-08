@@ -13,8 +13,9 @@ all: test build
 # 编译项目
 build:
 	@echo "Building project..."
-	@mkdir -p $(BIN_DIR)
-	@$(GO_BUILD) -o $(BIN_DIR)/$(PROJECT_NAME) $(SRC_DIR)
+	@echo "BIN_DIR: $(BIN_DIR)"
+	@if not exist $(BIN_DIR) (mkdir $(BIN_DIR))
+	@$(GO_BUILD) -o $(BIN_DIR)/$(PROJECT_NAME).exe $(SRC_DIR)/main.go
 
 # 运行项目
 run:
@@ -29,6 +30,6 @@ test:
 # 清理生成的文件
 clean:
 	@echo "Cleaning up..."
-	@rm -rf $(BIN_DIR)
+	@if exist $(BIN_DIR) (rmdir /s /q $(BIN_DIR))
 
 .PHONY: all build run test clean

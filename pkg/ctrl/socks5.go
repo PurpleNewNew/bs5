@@ -3,28 +3,26 @@ package ctrl
 import (
 	"context"
 	"fmt"
-	suo6 "github.com/OmagariHare/bs5/pkg/core"
-	"github.com/OmagariHare/bs5/pkg/netrans"
+	"github.com/PurpleNewNew/bs5/pkg/core"
 	"github.com/pkg/errors"
 	"io"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/PurpleNewNew/bs5/pkg/netrans"
 	"github.com/go-gost/gosocks5"
 	log "github.com/kataras/golog"
 )
 
-// socks5Handler socks5 处理器结构体
 type socks5Handler struct {
-	*suo6.Suo5Client
+	*core.Suo5Client
 
 	ctx      context.Context
 	pool     *sync.Pool
 	selector gosocks5.Selector
 }
 
-// Handle 处理一个socks5 连接请求
 func (m *socks5Handler) Handle(conn net.Conn) error {
 	defer conn.Close()
 
@@ -55,7 +53,7 @@ func (m *socks5Handler) Handle(conn net.Conn) error {
 }
 
 func (m *socks5Handler) handleConnect(conn net.Conn, sockReq *gosocks5.Request) {
-	streamRW := suo6.NewSuo5Conn(m.ctx, m.Suo5Client)
+	streamRW := core.NewSuo5Conn(m.ctx, m.Suo5Client)
 	err := streamRW.Connect(sockReq.Addr.String())
 	if err != nil {
 		ReplyError(conn, err)
@@ -108,11 +106,11 @@ func (m *socks5Handler) pipe(r io.Reader, w io.Writer) error {
 
 func ReplyError(conn net.Conn, err error) {
 	var rep *gosocks5.Reply
-	if errors.Is(err, suo6.ErrHostUnreachable) {
+	if errors.Is(err, core.ErrHostUnreachable) {
 		rep = gosocks5.NewReply(gosocks5.HostUnreachable, nil)
-	} else if errors.Is(err, suo6.ErrDialFailed) {
+	} else if errors.Is(err, core.ErrDialFailed) {
 		rep = gosocks5.NewReply(gosocks5.Failure, nil)
-	} else if errors.Is(err, suo6.ErrConnRefused) {
+	} else if errors.Is(err, core.ErrConnRefused) {
 		rep = gosocks5.NewReply(gosocks5.ConnRefused, nil)
 	}
 	_ = rep.Write(conn)

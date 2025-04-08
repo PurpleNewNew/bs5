@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/OmagariHare/bs5/pkg/netrans"
-	"github.com/OmagariHare/bs5/pkg/rawhttp"
-	"github.com/chainreactors/proxyclient"
+	"github.com/PurpleNewNew/bs5/internal/proxyclient"
+	"github.com/PurpleNewNew/bs5/internal/rawhttp"
+	"github.com/PurpleNewNew/bs5/pkg/netrans"
 	"github.com/gobwas/glob"
 	log "github.com/kataras/golog"
 	utls "github.com/refraction-networking/utls"
@@ -38,6 +38,7 @@ type Suo5Config struct {
 	DisableGzip      bool           `json:"disable_gzip"`
 	EnableCookieJar  bool           `json:"enable_cookiejar"`
 	ExcludeDomain    []string       `json:"exclude_domain"`
+	ForwardTarget    string         `json:"forward_target"`
 
 	TestExit                string                               `json:"-"`
 	ExcludeGlobs            []glob.Glob                          `json:"-"`
@@ -50,7 +51,6 @@ type Suo5Config struct {
 	GuiLog                  io.Writer                            `json:"-"`
 }
 
-// Parse 传递配置
 func (s *Suo5Config) Parse() error {
 	if err := s.parseExcludeDomain(); err != nil {
 		return err
@@ -58,7 +58,6 @@ func (s *Suo5Config) Parse() error {
 	return s.parseHeader()
 }
 
-// 解析排除域名
 func (s *Suo5Config) parseExcludeDomain() error {
 	s.ExcludeGlobs = make([]glob.Glob, 0)
 	for _, domain := range s.ExcludeDomain {
@@ -71,7 +70,6 @@ func (s *Suo5Config) parseExcludeDomain() error {
 	return nil
 }
 
-// 解析Header
 func (s *Suo5Config) parseHeader() error {
 	s.Header = make(http.Header)
 	for _, value := range s.RawHeader {
@@ -97,7 +95,6 @@ func (s *Suo5Config) parseHeader() error {
 	return nil
 }
 
-// 初始化配置
 func (config *Suo5Config) Init() (*Suo5Client, error) {
 	err := config.Parse()
 	if err != nil {
@@ -243,6 +240,7 @@ func DefaultSuo5Config() *Suo5Config {
 		RawHeader:        []string{"User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3"},
 		DisableHeartbeat: false,
 		EnableCookieJar:  false,
+		ForwardTarget:    "",
 	}
 }
 

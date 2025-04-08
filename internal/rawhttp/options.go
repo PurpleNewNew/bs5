@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/OmagariHare/bs5/pkg/rawhttp/client"
+	"github.com/PurpleNewNew/bs5/internal/rawhttp/client"
 )
 
 // Options contains configuration options for rawhttp client

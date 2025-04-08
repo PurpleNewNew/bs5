@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	netrans2 "github.com/OmagariHare/bs5/pkg/netrans"
+	netrans2 "github.com/PurpleNewNew/bs5/pkg/netrans"
 	log "github.com/kataras/golog"
 	"github.com/pkg/errors"
 	"io"

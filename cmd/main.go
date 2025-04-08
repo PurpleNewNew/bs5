@@ -4,182 +4,93 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	suo6 "github.com/OmagariHare/bs5/pkg/core"
-	"github.com/OmagariHare/bs5/pkg/ctrl"
 	"os"
 	"os/signal"
 	"strings"
 
+	"github.com/PurpleNewNew/bs5/pkg/core"
+	"github.com/PurpleNewNew/bs5/pkg/ctrl"
 	log "github.com/kataras/golog"
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 )
 
 var Version = "v0.0.0"
 
 func main() {
 	log.Default.SetTimeFormat("01-02 15:04")
-	app := cli.NewApp()
-	app.Name = "bs5"
-	app.Usage = "A high-performance http tunnel"
-	app.Version = Version
-
-	defaultConfig := suo6.DefaultSuo5Config()
-	app.DisableSliceFlagSeparator = true
-
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:    "config",
-			Aliases: []string{"c"},
-			Usage:   "the filepath for json config file",
-			Value:   "",
-		},
-		&cli.StringFlag{
-			Name:     "target",
-			Aliases:  []string{"t"},
-			Usage:    "the remote server url, ex: http://localhost:8080/suo5.jsp",
-			Value:    defaultConfig.Target,
-			Required: true,
-		},
-		&cli.StringFlag{
-			Name:    "listen",
-			Aliases: []string{"l"},
-			Usage:   "listen address of socks5 server",
-			Value:   defaultConfig.Listen,
-		},
-		&cli.StringFlag{
-			Name:    "method",
-			Aliases: []string{"m"},
-			Usage:   "http request method",
-			Value:   defaultConfig.Method,
-		},
-		&cli.StringFlag{
-			Name:    "redirect",
-			Aliases: []string{"r"},
-			Usage:   "redirect to the url if host not matched, used to bypass load balance",
-			Value:   defaultConfig.RedirectURL,
-		},
-		&cli.BoolFlag{
-			Name:  "no-auth",
-			Usage: "disable socks5 authentication",
-			Value: defaultConfig.NoAuth,
-		},
-		&cli.StringFlag{
-			Name:  "auth",
-			Usage: "socks5 creds, username:password, leave empty to auto generate",
-			Value: "",
-		},
-		&cli.StringFlag{
-			Name:  "mode",
-			Usage: "connection mode, choices are auto, full, half",
-			Value: string(defaultConfig.Mode),
-		},
-		&cli.StringFlag{
-			Name:  "ua",
-			Usage: "set the request User-Agent",
-			Value: "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3",
-		},
-		&cli.StringSliceFlag{
-			Name:    "header",
-			Aliases: []string{"H"},
-			Usage:   "use extra header, ex -H 'Cookie: abc'",
-		},
-		&cli.IntFlag{
-			Name:  "timeout",
-			Usage: "request timeout in seconds",
-			Value: defaultConfig.Timeout,
-		},
-		&cli.IntFlag{
-			Name:  "buf-size",
-			Usage: "request max body size",
-			Value: defaultConfig.BufferSize,
-		},
-		&cli.StringSliceFlag{
-			Name:  "proxy",
-			Usage: "set upstream proxy, support socks5/http(s), eg: socks5://127.0.0.1:7890",
-			Value: cli.NewStringSlice(defaultConfig.UpstreamProxy...),
-		},
-		&cli.BoolFlag{
-			Name:    "debug",
-			Aliases: []string{"d"},
-			Usage:   "debug the traffic, print more details",
-			Value:   defaultConfig.Debug,
-		},
-		&cli.BoolFlag{
-			Name:    "no-heartbeat",
-			Aliases: []string{"nh"},
-			Usage:   "disable heartbeat to the remote server which will send data every 5s",
-			Value:   defaultConfig.DisableHeartbeat,
-		},
-		&cli.BoolFlag{
-			Name:    "no-gzip",
-			Aliases: []string{"ng"},
-			Usage:   "disable gzip compression, which will improve compatibility with some old servers",
-			Value:   defaultConfig.DisableHeartbeat,
-		},
-		&cli.BoolFlag{
-			Name:    "jar",
-			Aliases: []string{"j"},
-			Usage:   "enable cookiejar",
-			Value:   defaultConfig.EnableCookieJar,
-		},
-		&cli.StringFlag{
-			Name:    "test-exit",
-			Aliases: []string{"T"},
-			Usage:   "test a real connection, if success exit(0), else exit(1)",
-			Hidden:  true,
-		},
-		&cli.StringSliceFlag{
-			Name:    "exclude-domain",
-			Aliases: []string{"E"},
-			Usage:   "exclude certain domain name for proxy, ex -E 'portswigger.net'",
-		},
-		&cli.StringFlag{
-			Name:    "exclude-domain-file",
-			Aliases: []string{"ef"},
-			Usage:   "exclude certain domains for proxy in a file, one domain per line",
-		},
-	}
-	app.Before = func(c *cli.Context) error {
-		if c.Bool("debug") {
-			log.Default.SetLevel("debug")
-		}
-		return nil
-	}
-	app.Action = Action
-
-	err := app.Run(os.Args)
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func Action(c *cli.Context) error {
-	listen := c.String("listen")
-	target := c.String("target")
-	noAuth := c.Bool("no-auth")
-	auth := c.String("auth")
-	mode := suo6.ConnectionType(c.String("mode"))
-	ua := c.String("ua")
-	bufSize := c.Int("buf-size")
-	timeout := c.Int("timeout")
-	debug := c.Bool("debug")
-	proxy := c.StringSlice("proxy")
-	method := c.String("method")
-	redirect := c.String("redirect")
-	header := c.StringSlice("header")
-	noHeartbeat := c.Bool("no-heartbeat")
-	noGzip := c.Bool("no-gzip")
-	jar := c.Bool("jar")
-	testExit := c.String("test-exit")
-	exclude := c.StringSlice("exclude-domain")
-	excludeFile := c.String("exclude-domain-file")
-	configFile := c.String("config")
+var rootCmd = &cobra.Command{
+	Use:     "suo5",
+	Short:   "A high-performance http tunnel",
+	Version: Version,
+	RunE:    run,
+}
+
+func init() {
+	defaultConfig := core.DefaultSuo5Config()
+
+	rootCmd.Flags().StringP("config", "c", "", "the filepath for json config file")
+	rootCmd.Flags().StringP("target", "t", defaultConfig.Target, "the remote server url, ex: http://localhost:8080/suo5.jsp")
+	rootCmd.Flags().StringP("listen", "l", defaultConfig.Listen, "listen address of socks5 server")
+	rootCmd.Flags().StringP("method", "m", defaultConfig.Method, "http request method")
+	rootCmd.Flags().StringP("redirect", "r", defaultConfig.RedirectURL, "redirect to the url if host not matched, used to bypass load balance")
+	rootCmd.Flags().Bool("no-auth", defaultConfig.NoAuth, "disable socks5 authentication")
+	rootCmd.Flags().String("auth", "", "socks5 creds, username:password, leave empty to auto generate")
+	rootCmd.Flags().String("mode", string(defaultConfig.Mode), "connection mode, choices are auto, full, half")
+	rootCmd.Flags().String("ua", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3", "set the request User-Agent")
+	rootCmd.Flags().StringSliceP("header", "H", nil, "use extra header, ex -H 'Cookie: abc'")
+	rootCmd.Flags().Int("timeout", defaultConfig.Timeout, "request timeout in seconds")
+	rootCmd.Flags().Int("buf-size", defaultConfig.BufferSize, "request max body size")
+	rootCmd.Flags().StringSliceP("proxy", "p", defaultConfig.UpstreamProxy, "set upstream proxy, support socks5/http(s), eg: socks5://127.0.0.1:7890")
+	rootCmd.Flags().BoolP("debug", "d", defaultConfig.Debug, "debug the traffic, print more details")
+	rootCmd.Flags().Bool("no-heartbeat", defaultConfig.DisableHeartbeat, "disable heartbeat to the remote server which will send data every 5s")
+	rootCmd.Flags().Bool("no-gzip", defaultConfig.DisableGzip, "disable gzip compression, which will improve compatibility with some old servers")
+	rootCmd.Flags().BoolP("jar", "j", defaultConfig.EnableCookieJar, "enable cookiejar")
+	rootCmd.Flags().StringP("test-exit", "T", "", "test a real connection, if success exit(0), else exit(1)")
+	rootCmd.Flags().StringSliceP("exclude-domain", "E", nil, "exclude certain domain name for proxy, ex -E 'portswigger.net'")
+	rootCmd.Flags().String("exclude-domain-file", "", "exclude certain domains for proxy in a file, one domain per line")
+	rootCmd.Flags().StringP("forward", "f", defaultConfig.ForwardTarget, "forward target address, enable forward mode when specified")
+
+	rootCmd.MarkFlagRequired("target")
+}
+
+func run(cmd *cobra.Command, args []string) error {
+	if debug, _ := cmd.Flags().GetBool("debug"); debug {
+		log.Default.SetLevel("debug")
+	}
+
+	listen, _ := cmd.Flags().GetString("listen")
+	target, _ := cmd.Flags().GetString("target")
+	noAuth, _ := cmd.Flags().GetBool("no-auth")
+	auth, _ := cmd.Flags().GetString("auth")
+	modeStr, _ := cmd.Flags().GetString("mode")
+	mode := core.ConnectionType(modeStr)
+	ua, _ := cmd.Flags().GetString("ua")
+	bufSize, _ := cmd.Flags().GetInt("buf-size")
+	timeout, _ := cmd.Flags().GetInt("timeout")
+	debug, _ := cmd.Flags().GetBool("debug")
+	proxy, _ := cmd.Flags().GetStringSlice("proxy")
+	method, _ := cmd.Flags().GetString("method")
+	redirect, _ := cmd.Flags().GetString("redirect")
+	header, _ := cmd.Flags().GetStringSlice("header")
+	noHeartbeat, _ := cmd.Flags().GetBool("no-heartbeat")
+	noGzip, _ := cmd.Flags().GetBool("no-gzip")
+	jar, _ := cmd.Flags().GetBool("jar")
+	testExit, _ := cmd.Flags().GetString("test-exit")
+	exclude, _ := cmd.Flags().GetStringSlice("exclude-domain")
+	excludeFile, _ := cmd.Flags().GetString("exclude-domain-file")
+	forward, _ := cmd.Flags().GetString("forward")
+	configFile, _ := cmd.Flags().GetString("config")
 
 	var username, password string
 	if auth == "" {
 		if !noAuth {
-			username = "bs5"
-			password = suo6.RandString(8)
+			username = "suo5"
+			password = core.RandString(8)
 		}
 	} else {
 		parts := strings.Split(auth, ":")
@@ -190,7 +101,7 @@ func Action(c *cli.Context) error {
 		password = parts[1]
 		noAuth = false
 	}
-	if !(mode == suo6.AutoDuplex || mode == suo6.FullDuplex || mode == suo6.HalfDuplex) {
+	if !(mode == core.AutoDuplex || mode == core.FullDuplex || mode == core.HalfDuplex) {
 		return fmt.Errorf("invalid mode, expected auto or full or half")
 	}
 
@@ -213,7 +124,7 @@ func Action(c *cli.Context) error {
 		}
 	}
 
-	config := &suo6.Suo5Config{
+	config := &core.Suo5Config{
 		Listen:           listen,
 		Target:           target,
 		NoAuth:           noAuth,
@@ -232,6 +143,7 @@ func Action(c *cli.Context) error {
 		EnableCookieJar:  jar,
 		TestExit:         testExit,
 		ExcludeDomain:    exclude,
+		ForwardTarget:    forward,
 	}
 
 	if configFile != "" {

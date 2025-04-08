@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/OmagariHare/bs5/pkg/netrans"
+	"github.com/PurpleNewNew/bs5/pkg/netrans"
 	log "github.com/kataras/golog"
 	"io"
 	"net/http"
 	"sync"
 )
 
-// 分块读写结构体
 type fullChunkedReadWriter struct {
 	id         string
 	reqBody    io.WriteCloser
@@ -30,24 +29,20 @@ func NewFullChunkedReadWriter(id string, reqBody io.WriteCloser, serverResp io.R
 		reqBody:    reqBody,
 		serverResp: serverResp,
 		readBuf:    bytes.Buffer{},
-		readTmp:    make([]byte, 16*1024), //16KB 的字节切片，用于存储读的数据
-		writeTmp:   make([]byte, 8*1024),  //8KB 的字节切片，用于存储写的数据
+		readTmp:    make([]byte, 16*1024),
+		writeTmp:   make([]byte, 8*1024),
 	}
 	return rw
 }
 
-// Read 全双工读操作
 func (s *fullChunkedReadWriter) Read(p []byte) (n int, err error) {
-	// 如果readBuf中有剩余数据，直接读取
 	if s.readBuf.Len() != 0 {
 		return s.readBuf.Read(p)
 	}
-	// 读取帧
 	fr, err := netrans.ReadFrame(s.serverResp)
 	if err != nil {
 		return 0, err
 	}
-	// 从帧中解析出k-v数据
 	m, err := Unmarshal(fr.Data)
 	if err != nil {
 		return 0, err
@@ -69,24 +64,19 @@ func (s *fullChunkedReadWriter) Read(p []byte) (n int, err error) {
 	}
 }
 
-// Write 生成NewActionData=1的帧，调用实际写操作
 func (s *fullChunkedReadWriter) Write(p []byte) (n int, err error) {
 	log.Debugf("write socket data, length: %d", len(p))
 	body := BuildBody(NewActionData(s.id, p, ""))
 	return s.WriteRaw(body)
 }
 
-// WriteRaw 实际写操作
 func (s *fullChunkedReadWriter) WriteRaw(p []byte) (n int, err error) {
 	return s.reqBody.Write(p)
 }
 
-// Close 关闭连接
 func (s *fullChunkedReadWriter) Close() error {
 	s.once.Do(func() {
-		defer func(reqBody io.WriteCloser) {
-			_ = reqBody.Close()
-		}(s.reqBody)
+		defer s.reqBody.Close()
 		body := BuildBody(NewDelete(s.id, ""))
 		_, _ = s.reqBody.Write(body)
 		_ = s.serverResp.Close()
@@ -94,7 +84,6 @@ func (s *fullChunkedReadWriter) Close() error {
 	return nil
 }
 
-// 半双工读写流结构体
 type halfChunkedReadWriter struct {
 	ctx        context.Context
 	id         string
@@ -130,7 +119,6 @@ func NewHalfChunkedReadWriter(ctx context.Context, id string, client *http.Clien
 	}
 }
 
-// Read 半双工读操作
 func (s *halfChunkedReadWriter) Read(p []byte) (n int, err error) {
 	if s.readBuf.Len() != 0 {
 		return s.readBuf.Read(p)
@@ -162,14 +150,12 @@ func (s *halfChunkedReadWriter) Read(p []byte) (n int, err error) {
 	}
 }
 
-// Write 半双工写操作
 func (s *halfChunkedReadWriter) Write(p []byte) (n int, err error) {
 	body := BuildBody(NewActionData(s.id, p, s.redirect))
 	log.Debugf("send request, length: %d", len(body))
 	return s.WriteRaw(body)
 }
 
-// WriteRaw 实际半双工写操作
 func (s *halfChunkedReadWriter) WriteRaw(p []byte) (n int, err error) {
 	req, err := http.NewRequestWithContext(s.ctx, s.method, s.target, bytes.NewReader(p))
 	if err != nil {
@@ -193,7 +179,6 @@ func (s *halfChunkedReadWriter) WriteRaw(p []byte) (n int, err error) {
 	}
 }
 
-// Close 关闭连接
 func (s *halfChunkedReadWriter) Close() error {
 	s.once.Do(func() {
 		body := BuildBody(NewDelete(s.id, s.redirect))

@@ -2,7 +2,7 @@ package rawhttp
 
 import (
 	"fmt"
-	"github.com/OmagariHare/bs5/pkg/rawhttp/client"
+	"github.com/PurpleNewNew/bs5/internal/rawhttp/client"
 	"io"
 	"io/ioutil"
 	"net"

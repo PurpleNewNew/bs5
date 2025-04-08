@@ -2,7 +2,7 @@ package rawhttp
 
 import (
 	"fmt"
-	"github.com/zema1/rawhttp/client"
+	"github.com/OmagariHare/bs5/pkg/rawhttp/client"
 	"io"
 	"io/ioutil"
 	"net"

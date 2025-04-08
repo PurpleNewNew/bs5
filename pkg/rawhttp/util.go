@@ -11,7 +11,7 @@ import (
 	stdurl "net/url"
 	"strings"
 
-	"github.com/zema1/rawhttp/client"
+	"github.com/OmagariHare/bs5/pkg/rawhttp/client"
 )
 
 // StatusError is a HTTP status error object

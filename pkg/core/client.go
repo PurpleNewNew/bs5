@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/OmagariHare/bs5/pkg/core/rawhttp"
+	"github.com/OmagariHare/bs5/pkg/rawhttp"
 	utls "github.com/refraction-networking/utls"
 	"net"
 	"net/http"

@@ -1,8 +1,8 @@
 package core
 
 import (
+	"github.com/OmagariHare/bs5/pkg/core/rawhttp"
 	utls "github.com/refraction-networking/utls"
-	"github.com/zema1/rawhttp"
 	"net"
 	"net/http"
 	"strings"

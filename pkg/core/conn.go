@@ -19,6 +19,7 @@ var (
 	ErrConnRefused     = errors.New("connection refused")
 )
 
+// 用于创建一个Suo5Conn
 func NewSuo5Conn(ctx context.Context, client *Suo5Client) *Suo5Conn {
 	return &Suo5Conn{
 		ctx:        ctx,
@@ -26,12 +27,14 @@ func NewSuo5Conn(ctx context.Context, client *Suo5Client) *Suo5Conn {
 	}
 }
 
+// Suo5Conn 结构体
 type Suo5Conn struct {
 	io.ReadWriteCloser
 	ctx context.Context
 	*Suo5Client
 }
 
+// 连接方法，
 func (suo *Suo5Conn) Connect(address string) error {
 	id := RandString(8)
 	var req *http.Request

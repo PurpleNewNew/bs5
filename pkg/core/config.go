@@ -97,6 +97,7 @@ func (s *Suo5Config) parseHeader() error {
 	return nil
 }
 
+// 初始化配置
 func (config *Suo5Config) Init() (*Suo5Client, error) {
 	err := config.Parse()
 	if err != nil {

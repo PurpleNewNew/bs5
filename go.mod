@@ -12,7 +12,6 @@ require (
 	github.com/refraction-networking/utls v1.6.7
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.6
-	github.com/zema1/rawhttp v0.2.0
 	golang.org/x/net v0.25.0
 )
 

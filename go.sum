@@ -233,7 +233,6 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/zema1/rawhttp v0.2.0 h1:H7jGMIQu2erfJt5ZdhKSBRSZzoQGMU5j//c1i+OOyHQ=
 github.com/zema1/rawhttp v0.2.0/go.mod h1:EYBmBgSu01yb/kLh6lgjJWa6kDV+DrSO8nbgmEzuG6E=
 github.com/zema1/suo5 v1.3.2-0.20250219115440-31983ee59a83/go.mod h1:MAuFXiTGFS3PLzZ6cTVsjdQqze4SWPfHvciBTPE6dkw=
 go.opencensus.io v0.18.0/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=

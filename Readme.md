@@ -28,11 +28,18 @@
 - 支持 Java4 ~ Java 21 全版本和各大主流中间件服务
 - 支持 IIS .Net Framework >= 2.0 的所有版本
 - 完善的连接控制和并发管理，使用流畅丝滑
-- 同时提供提供命令行和图形化界面
+- 同时提供提供命令行和TUI界面（待定）
 
 原理介绍 [https://koalr.me/posts/bs5-a-hign-performace-http-socks/](https://koalr.me/posts/bs5-a-hign-performace-http-socks/)
 
 > 免责声明：此工具仅限于安全研究，用户承担因使用此工具而导致的所有法律和相关责任！作者不承担任何法律责任！
+
+## 编译
+
+```text
+如果你是Windows，在确保安装了make.exe时，直接可以make build，不过直接使用go build -o bs5.exe .\cmd\main.go也可以
+Linux/MacOS 同理
+```
 
 ## 运行
 
@@ -70,71 +77,7 @@ Flags:
 $ ./bs5 -t https://example.com/proxy.jsp
 ```
 
-使用 `GET` 方法发送请求，有时可以绕过限制
-
-```bash
-$ ./bs5 -m GET -t https://example.com/proxy.jsp
-```
-
-自定义 socks5 监听在 `0.0.0.0:7788`，并自定义认证信息为 `test:test123`
-
-```bash
-$ ./bs5 -t https://example.com/proxy.jsp -l 0.0.0.0:7788 --auth test:test123
-```
-
-负载均衡场景下将流量转发到某一个固定的 url 解决请求被分散的问题，需要尽可能的在每一个后端服务中上传 bs5。
-它的原理是判断 `-r` 中 URL 的 IP 是否与服务器的网卡 IP 匹配，不匹配则转发。
-
-```bash
-$ ./bs5 -t https://example.com/proxy.jsp -r http://172.0.3.2/code/proxy.jsp
-```
-
-配置域名/IP过滤规则，避免无意义的域名被代理, 命中规则的连接会直接被 reset 掉
-
-```bash
-# example.com 和 google.com 这两个域名不走代理
-$ ./bs5 -t https://example.com/proxy.jsp -E example.com -E google.com
-
-# 也可以将域名列表放在文件里，一行一个
-$ ./bs5 -t https://example.com/proxy.jsp -ef ./excludes.txt
-
-# 注意: 如果你配置的是域名，你需要确保 bs5 代理拿到的是域名，而不是解析好的 ip, 否则不会生效, 例如:
-# 已经解析成 IP:  curl -v -x 'socks5://127.0.0.1:1111' https://example.com
-# 仍然是域名:  curl -v -x 'socks5h://127.0.0.1:1111' https://example.com
-```
-
-### 特别提醒
-
-`User-Agent` (`ua`) 的配置本地端与服务端是绑定的，如果修改了其中一个，另一个也必须对应修改才能连接上, 你可以将这个作为连接密码使用。
-
-## 配置文件
-
-配置文件的定义来自 `ctrl.bs5Config`, 完整的配置如下:
-
-```json
-{
-  "method": "POST",
-  "listen": "127.0.0.1:1111",
-  "target": "",
-  "no_auth": true,
-  "username": "",
-  "password": "",
-  "mode": "auto",
-  "buffer_size": 327680,
-  "timeout": 10,
-  "debug": false,
-  "upstream_proxy": "",
-  "redirect_url": "",
-  "raw_header": [
-    "User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3"
-  ],
-  "disable_heartbeat": false,
-  "disable_gzip": false,
-  "disable_cookiejar": true,
-  "exclude_domain": null
-}
-```
-
+![截图1](images/1.png)
 
 ## 常见问题
 

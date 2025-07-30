@@ -14,6 +14,13 @@
 构建, 相比 [Neo-reGeorg](https://github.com/L-codes/Neo-reGeorg) 等传统隧道工具, `bs5`
 的性能可以达到其数十倍。
 
+相比于原版的改进：
+- 移除了urfave/cli，改为使用Cobra（相比原版有部分命令行参数不同）
+- 使用Viper，增加了多种配置文件支持
+- 项目结构管理更清晰，将部分外部依赖整合到internal软件包中
+- 重命名包名称，重构包结构
+- 使用Makefile清晰明的配置文件，方便构建
+
 其主要特性如下：
 
 - 同时支持全双工与半双工模式，传输性能接近 FRP
@@ -30,31 +37,34 @@
 ## 运行
 
 ```text
-USAGE:
-   bs5 [global options] command [command options] [arguments...]
+Usage:
+  bs5 [flags]
 
-GLOBAL OPTIONS:
-   --target value, -t value                               the remote server url, ex: http://localhost:8080/bs5.jsp
-   --listen value, -l value                               listen address of socks5 server (default: "127.0.0.1:1111")
-   --method value, -m value                               http request method (default: "POST")
-   --redirect value, -r value                             redirect to the url if host not matched, used to bypass load balance
-   --no-auth                                              disable socks5 authentication (default: true)
-   --auth value                                           socks5 creds, username:password, leave empty to auto generate
-   --mode value                                           connection mode, choices are auto, full, half (default: "auto")
-   --ua value                                             set the request User-Agent (default: "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3")
-   --header value, -H value [ --header value, -H value ]  use extra header, ex -H 'Cookie: abc'
-   --timeout value                                        request timeout in seconds (default: 10)
-   --buf-size value                                       request max body size (default: 327680)
-   --proxy value                                          set upstream proxy, support socks5/http(s), eg: socks5://127.0.0.1:7890
-   --debug, -d                                            debug the traffic, print more details (default: false)
-   --no-heartbeat, --nh                                   disable heartbeat to the remote server which will send data every 5s (default: false)
-   --no-gzip, --ng                                        disable gzip compression, which will improve compatibility with some old servers (default: false)
-   --jar, -j                                              enable cookiejar (default: false)
-   --help, -h                                             show help
-   --version, -v                                          print the version
+Flags:
+      --auth string                  socks5 creds, username:password, leave empty to auto generate
+      --buf-size int                 request max body size (default 327680)
+  -c, --config string                the filepath for json config file
+  -d, --debug                        debug the traffic, print more details
+  -E, --exclude-domain strings       exclude certain domain name for proxy, ex -E 'portswigger.net'
+      --exclude-domain-file string   exclude certain domains for proxy in a file, one domain per line
+  -f, --forward string               forward target address, enable forward mode when specified
+  -H, --header strings               use extra header, ex -H 'Cookie: abc'
+  -h, --help                         help for bs5
+  -j, --jar                          enable cookiejar
+  -l, --listen string                listen address of socks5 server (default "127.0.0.1:1111")
+  -m, --method string                http request method (default "POST")
+      --mode string                  connection mode, choices are auto, full, half (default "auto")
+      --no-auth                      disable socks5 authentication (default true)
+      --no-gzip                      disable gzip compression, which will improve compatibility with some old servers
+      --no-heartbeat                 disable heartbeat to the remote server which will send data every 5s
+  -p, --proxy strings                set upstream proxy, support socks5/http(s), eg: socks5://127.0.0.1:7890
+  -r, --redirect string              redirect to the url if host not matched, used to bypass load balance
+  -t, --target string                the remote server url, ex: http://localhost:8080/suo5.jsp
+  -T, --test-exit string             test a real connection, if success exit(0), else exit(1)
+      --timeout int                  request timeout in seconds (default 10)
+      --ua string                    set the request User-Agent (default "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3")
+  -v, --version                      version for suo5
 ```
-
-命令行版本与界面版配置完全一致，可以对照界面版功能来使用，最简单的只需指定连接目标
 
 ```bash
 $ ./bs5 -t https://example.com/proxy.jsp
@@ -125,8 +135,6 @@ $ ./bs5 -t https://example.com/proxy.jsp -ef ./excludes.txt
 }
 ```
 
-GUI 版本可以使用界面 `导入配置` 和 `导出配置` 功能来导入和导出配置文件。cli 版本可以使用 `-c` 参数来指定配置文件。
-GUI 导出的配置文件也可以给命令行使用，两者的格式是一样的。
 
 ## 常见问题
 
@@ -144,7 +152,11 @@ GUI 导出的配置文件也可以给命令行使用，两者的格式是一样�
 
 ## 接下来
 
+- [ ] 修正配置文件支持
+- [ ] 代码清理
+- [ ] 添加容器测试，方便开发
 - [ ] 流量特征去除
+- [ ] 新增组网功能
 
 ## 原suo5项目
 再次感谢原作者这款极其优秀的工具

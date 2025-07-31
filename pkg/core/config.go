@@ -100,72 +100,13 @@ func (config *Suo5Config) Init(ctx context.Context) (*Suo5Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	if config.DisableGzip {
-		log.Infof("disable gzip")
-		config.Header.Set("Accept-Encoding", "identity")
+
+	tr, err := newHTTPTransport(config)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(config.ExcludeDomain) != 0 {
-		log.Infof("exclude domains: %v", config.ExcludeDomain)
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			MinVersion:         tls.VersionTLS10,
-			Renegotiation:      tls.RenegotiateOnceAsClient,
-			InsecureSkipVerify: true,
-		},
-		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			conn, err := net.DialTimeout(network, addr, 5*time.Second)
-			if err != nil {
-				return nil, err
-			}
-			colonPos := strings.LastIndex(addr, ":")
-			if colonPos == -1 {
-				colonPos = len(addr)
-			}
-			hostname := addr[:colonPos]
-			tlsConfig := &utls.Config{
-				ServerName:         hostname,
-				InsecureSkipVerify: true,
-				Renegotiation:      utls.RenegotiateOnceAsClient,
-				MinVersion:         utls.VersionTLS10,
-			}
-			uTlsConn := utls.UClient(conn, tlsConfig, utls.HelloRandomizedNoALPN)
-			if err = uTlsConn.HandshakeContext(ctx); err != nil {
-				_ = conn.Close()
-				return nil, err
-			}
-			return uTlsConn, nil
-		},
-	}
-	if len(config.UpstreamProxy) > 0 {
-		proxies, err := proxyclient.ParseProxyURLs(config.UpstreamProxy)
-		if err != nil {
-			return nil, err
-		}
-		log.Infof("using upstream proxy %v", proxies)
-
-		config.ProxyClient, err = proxyclient.NewClientChain(proxies)
-		if err != nil {
-			return nil, err
-		}
-		tr.DialContext = config.ProxyClient.DialContext
-	}
-	if config.RedirectURL != "" {
-		_, err := url.Parse(config.RedirectURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse redirect url, %s", err)
-		}
-		log.Infof("using redirect url %v", config.RedirectURL)
-	}
-	var jar http.CookieJar
-	if config.EnableCookieJar {
-		jar, _ = cookiejar.New(nil)
-	} else {
-		// 对 PHP的特殊处理一下, 如果是 PHP 的站点则自动启用 cookiejar, 其他站点保持不启用
-		jar = NewSwitchableCookieJar([]string{"PHPSESSID"})
-	}
+	jar := newCookieJar(config)
 
 	noTimeoutClient := &http.Client{
 		Transport: tr.Clone(),
@@ -213,6 +154,83 @@ func (config *Suo5Config) Init(ctx context.Context) (*Suo5Client, error) {
 		NoTimeoutClient: noTimeoutClient,
 		RawClient:       rawClient,
 	}, nil
+}
+
+// newHTTPTransport creates and configures an http.Transport based on the Suo5Config.
+func newHTTPTransport(config *Suo5Config) (*http.Transport, error) {
+	if config.DisableGzip {
+		log.Infof("disable gzip")
+		config.Header.Set("Accept-Encoding", "identity")
+	}
+
+	if len(config.ExcludeDomain) != 0 {
+		log.Infof("exclude domains: %v", config.ExcludeDomain)
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			MinVersion:         tls.VersionTLS10,
+			Renegotiation:      tls.RenegotiateOnceAsClient,
+			InsecureSkipVerify: true,
+		},
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := net.DialTimeout(network, addr, 5*time.Second)
+			if err != nil {
+				return nil, err
+			}
+			colonPos := strings.LastIndex(addr, ":")
+			if colonPos == -1 {
+				colonPos = len(addr)
+			}
+			hostname := addr[:colonPos]
+			tlsConfig := &utls.Config{
+				ServerName:         hostname,
+				InsecureSkipVerify: true,
+				Renegotiation:      utls.RenegotiateOnceAsClient,
+				MinVersion:         utls.VersionTLS10,
+			}
+			uTlsConn := utls.UClient(conn, tlsConfig, utls.HelloRandomizedNoALPN)
+			if err = uTlsConn.HandshakeContext(ctx); err != nil {
+				_ = conn.Close()
+				return nil, err
+			}
+			return uTlsConn, nil
+		},
+	}
+
+	if len(config.UpstreamProxy) > 0 {
+		proxies, err := proxyclient.ParseProxyURLs(config.UpstreamProxy)
+		if err != nil {
+			return nil, err
+		}
+		log.Infof("using upstream proxy %v", proxies)
+
+		config.ProxyClient, err = proxyclient.NewClientChain(proxies)
+		if err != nil {
+			return nil, err
+		}
+		tr.DialContext = config.ProxyClient.DialContext
+	}
+
+	if config.RedirectURL != "" {
+		_, err := url.Parse(config.RedirectURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse redirect url, %s", err)
+		}
+		log.Infof("using redirect url %v", config.RedirectURL)
+	}
+
+	return tr, nil
+}
+
+// newCookieJar creates a cookie jar based on the Suo5Config.
+func newCookieJar(config *Suo5Config) http.CookieJar {
+	if config.EnableCookieJar {
+		jar, _ := cookiejar.New(nil)
+		return jar
+	}
+	// For PHP sites, automatically enable cookiejar for PHPSESSID to handle sessions.
+	return NewSwitchableCookieJar([]string{"PHPSESSID"})
 }
 
 func (s *Suo5Config) HeaderString() string {

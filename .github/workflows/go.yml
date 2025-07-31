@@ -1,0 +1,72 @@
+name: Go CI and Cross-Compile
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *' # 每天 UTC 时间 2:00 运行
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Run tests
+      run: go test -v ./...
+
+  build:
+    needs: test # 确保在构建前，测试任务已成功完成
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 定义目标平台和架构的组合
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: darwin # macOS
+            goarch: amd64
+          - goos: darwin # macOS for Apple Silicon
+            goarch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build application
+      run: |
+        # 1. 生成版本号
+        VERSION="v$(date +%Y%m%d)-$(echo $GITHUB_SHA | cut -c1-7)"
+        echo "Building version: $VERSION for ${{ matrix.goos }}/${{ matrix.goarch }}"
+
+        # 2. 定义输出文件名，Windows 系统添加 .exe 后缀
+        BINARY_NAME="bs5-${{ matrix.goos }}-${{ matrix.goarch }}"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          BINARY_NAME+=".exe"
+        fi
+
+        # 3. 设置环境变量并执行交叉编译
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X 'main.version=${VERSION}'" -o "dist/${BINARY_NAME}" cmd/main.go
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: bs5-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: dist/

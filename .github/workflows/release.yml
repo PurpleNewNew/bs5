@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 仅在推送 v 开头的标签时触发, e.g. v1.0.0, v1.2.3
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }} # 输出上传 URL 给其他 job 使用
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true # 自动生成发行说明
+          # ${{ github.ref_name }} 会自动获取标签名, e.g., "v1.0.0"
+
+  build-and-upload:
+    needs: create-release # 等待 create-release 任务完成
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build application
+        run: |
+          # 1. 版本号直接使用 Git 标签名
+          VERSION=${{ github.ref_name }}
+          echo "Building release version: $VERSION for ${{ matrix.goos }}/${{ matrix.goarch }}"
+
+          # 2. 定义输出文件名
+          BINARY_NAME="bs5-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY_NAME+=".exe"
+          fi
+          
+          # 3. 执行交叉编译
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X 'main.version=${VERSION}'" -o "${BINARY_NAME}" cmd/main.go
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }} # 从上一个 job 获取上传 URL
+          asset_path: ./${{ env.BINARY_NAME }} # 要上传的文件路径
+          asset_name: ${{ env.BINARY_NAME }} # 在 Release 中显示的文件名
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BINARY_NAME: bs5-${{ matrix.goos }}-${{ matrix.goarch }}$(if [ "${{ matrix.goos }}" = "windows" ]; then echo ".exe"; fi)

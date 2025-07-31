@@ -15,10 +15,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Version = "v0.0.0"
+var Version = "v0.0.0" // This will be overwritten by -ldflags
 
 func main() {
 	log.Default.SetTimeFormat("01-02 15:04")
+	log.Infof("bs5 version %s", Version) // Print version on start
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func initConfig() {
 	// This function will be called by cobra.OnInitialize
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(cmd *cobra.Command, _ []string) error {
 	// Start with a config object populated with default values
 	cfg := core.DefaultSuo5Config()
 

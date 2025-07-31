@@ -41,7 +41,14 @@ func init() {
 	rootCmd.Flags().Bool("no-auth", defaultConfig.NoAuth, "disable socks5 authentication")
 	rootCmd.Flags().String("auth", "", "socks5 creds, username:password, leave empty to auto generate")
 	rootCmd.Flags().String("mode", string(defaultConfig.Mode), "connection mode, choices are auto, full, half")
-	rootCmd.Flags().String("ua", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.1.2.3", "set the request User-Agent")
+	uaHeader := ""
+	for _, h := range defaultConfig.RawHeader {
+		if strings.HasPrefix(strings.ToLower(h), "user-agent:") {
+			uaHeader = strings.TrimSpace(strings.SplitN(h, ":", 2)[1])
+			break
+		}
+	}
+	rootCmd.Flags().String("ua", uaHeader, "set the request User-Agent")
 	rootCmd.Flags().StringSliceP("header", "H", nil, "use extra header, ex -H 'Cookie: abc'")
 	rootCmd.Flags().Int("timeout", defaultConfig.Timeout, "request timeout in seconds")
 	rootCmd.Flags().Int("buf-size", defaultConfig.BufferSize, "request max body size")

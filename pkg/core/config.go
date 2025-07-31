@@ -95,7 +95,7 @@ func (s *Suo5Config) parseHeader() error {
 	return nil
 }
 
-func (config *Suo5Config) Init() (*Suo5Client, error) {
+func (config *Suo5Config) Init(ctx context.Context) (*Suo5Client, error) {
 	err := config.Parse()
 	if err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func (config *Suo5Config) Init() (*Suo5Client, error) {
 	log.Infof("header: %s", config.HeaderString())
 	log.Infof("method: %s", config.Method)
 	log.Infof("connecting to target %s", config.Target)
-	result, offset, err := checkConnectMode(config)
+	result, offset, err := checkConnectMode(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -244,14 +244,18 @@ func DefaultSuo5Config() *Suo5Config {
 	}
 }
 
-func checkConnectMode(config *Suo5Config) (ConnectionType, int, error) {
-	// 这里的 client 需要定义 timeout，不要用外面没有 timeout 的 rawCient
+func checkConnectMode(ctx context.Context, config *Suo5Config) (ConnectionType, int, error) {
+	// Use a context with a timeout for this check
+	checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	var rawClient *rawhttp.Client
 	if config.ProxyClient != nil {
-		rawClient = newRawClient(config.ProxyClient.DialContext, time.Second*5)
+		rawClient = newRawClient(config.ProxyClient.DialContext, 0) // Timeout is handled by context
 	} else {
-		rawClient = newRawClient(nil, time.Second*5)
+		rawClient = newRawClient(nil, 0)
 	}
+
 	randLen := rander.Intn(1024)
 	if randLen <= 32 {
 		randLen += 32
@@ -259,7 +263,16 @@ func checkConnectMode(config *Suo5Config) (ConnectionType, int, error) {
 	data := RandString(randLen)
 	ch := make(chan []byte, 1)
 	ch <- []byte(data)
-	req, err := http.NewRequest(config.Method, config.Target, netrans.NewChannelReader(ch))
+
+	// Use a goroutine to close the channel when the context is done
+	go func() {
+		select {
+		case <-checkCtx.Done():
+			close(ch)
+		}
+	}()
+
+	req, err := http.NewRequestWithContext(checkCtx, config.Method, config.Target, netrans.NewChannelReader(ch))
 	if err != nil {
 		return Undefined, 0, err
 	}
@@ -267,24 +280,24 @@ func checkConnectMode(config *Suo5Config) (ConnectionType, int, error) {
 	req.Header.Set(HeaderKey, HeaderValueChecking)
 
 	now := time.Now()
-	go func() {
-		// timeout
-		time.Sleep(time.Second * 3)
-		close(ch)
-	}()
 	resp, err := rawClient.Do(req)
 	if err != nil {
+		// Check if the error is due to context cancellation
+		if ctxErr := checkCtx.Err(); ctxErr != nil {
+			log.Warnf("connection mode check timed out: %v", ctxErr)
+			// This is not a fatal error, we can assume HalfDuplex
+			return HalfDuplex, 0, nil
+		}
 		return Undefined, 0, err
 	}
 	defer resp.Body.Close()
 
-	// 如果独到响应的时间在3s内，说明请求没有被缓存, 那么就可以变成全双工的
+	duration := time.Since(now)
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		// 这里不要直接返回，有时虽然 eof 了但是数据是对的，可以使用
-		log.Warnf("got error %s", err)
+		log.Warnf("got error while reading body: %s", err)
 	}
-	duration := time.Since(now).Milliseconds()
 
 	offset := strings.Index(string(body), data[:32])
 	if offset == -1 {
@@ -294,7 +307,8 @@ func checkConnectMode(config *Suo5Config) (ConnectionType, int, error) {
 	}
 	log.Infof("got data offset, %d", offset)
 
-	if duration < 3000 {
+	// If the request completed quickly, we can assume FullDuplex
+	if duration < 3*time.Second {
 		return FullDuplex, offset, nil
 	} else {
 		return HalfDuplex, offset, nil

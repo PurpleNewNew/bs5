@@ -30,7 +30,7 @@ func Run(ctx context.Context, config *core.Suo5Config) error {
 		log.SetLevel("debug")
 	}
 
-	suo5Client, err := config.Init()
+	suo5Client, err := config.Init(ctx)
 	if err != nil {
 		return err
 	}

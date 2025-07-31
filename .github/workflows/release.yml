@@ -16,7 +16,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true # 自动生成发行说明
-          # ${{ github.ref_name }} 会自动获取标签名, e.g., "v1.0.0"
+          tag_name: ${{ github.ref_name }} # 自动获取标签名, e.g., "v1.0.0"
 
   build-and-upload:
     needs: create-release # 等待 create-release 任务完成

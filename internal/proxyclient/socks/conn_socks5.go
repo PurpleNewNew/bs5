@@ -150,10 +150,6 @@ func (c *socks5Conn) sendReplyWithError(request *socks5Request, err error) bool 
 		return false
 	}
 	switch err := err.(type) {
-	case net.Error:
-		if err.Timeout() {
-			c.sendReply(request, socks5StatusHostUnreachable)
-		}
 	case *net.OpError:
 		switch err.Op {
 		case "dial":
@@ -162,9 +158,12 @@ func (c *socks5Conn) sendReplyWithError(request *socks5Request, err error) bool 
 			c.sendReply(request, socks5StatusConnectionRefused)
 		}
 	case syscall.Errno:
-		switch err {
-		case syscall.ECONNREFUSED:
+		if err == syscall.ECONNREFUSED {
 			c.sendReply(request, socks5StatusConnectionRefused)
+		}
+	case net.Error:
+		if err.Timeout() {
+			c.sendReply(request, socks5StatusHostUnreachable)
 		}
 	default:
 		c.sendReply(request, socks5StatusGeneral)

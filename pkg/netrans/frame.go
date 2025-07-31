@@ -29,7 +29,7 @@ func (d *DataFrame) MarshalBinary() []byte {
 	result = append(result, d.Obs)
 	result = append(result, d.Data...)
 	for i := 5; i < len(result); i++ {
-		result[i] = result[i] ^ d.Obs
+		result[i] ^= d.Obs
 	}
 	return result
 }
@@ -58,7 +58,7 @@ func ReadFrame(r io.Reader) (*DataFrame, error) {
 		return nil, fmt.Errorf("read data error: %v", err)
 	}
 	for i := 0; i < len(buf); i++ {
-		buf[i] = buf[i] ^ fr.Obs
+		buf[i] ^= fr.Obs
 	}
 	fr.Data = buf
 	return fr, nil

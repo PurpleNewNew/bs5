@@ -42,8 +42,7 @@ func (c *Socks4Client) Dial(ctx context.Context, network, address string) (remot
 		return
 	}
 
-	switch request.command {
-	case commandConnect:
+	if request.command == commandConnect {
 		err = c.handleConnect(remoteConn)
 	}
 	return

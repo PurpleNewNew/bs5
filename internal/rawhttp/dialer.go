@@ -52,7 +52,8 @@ func (d *dialer) dialTimeout(protocol, addr string, timeout time.Duration, optio
 }
 
 func (d *dialer) DialWithProxy(protocol, addr string, upstream ContextDialFunc, timeout time.Duration, options *Options) (net.Conn, error) {
-	ctx, _ := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 	conn, err := upstream(ctx, "tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("proxy error: %w", err)

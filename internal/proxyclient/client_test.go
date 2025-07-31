@@ -16,7 +16,6 @@ func TestNewClientWithDial(t *testing.T) {
 	_, err = conn.Write([]byte("sadfafdasff"))
 	if err != nil {
 		panic(err)
-		return
 	}
 
 	time.Sleep(1 * time.Second)

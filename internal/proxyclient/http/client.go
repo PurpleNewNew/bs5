@@ -71,10 +71,10 @@ func (client *Client) connect(network, address string) (conn net.Conn, err error
 }
 
 func (client *Client) newRequest(address string) (*http.Request, error) {
-	//remoteHost, _, err := net.SplitHostPort(address)
-	//if err != nil {
-	//	return nil, err
-	//}
+	// remoteHost, _, err := net.SplitHostPort(address)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	request, err := http.NewRequest(http.MethodConnect, "", nil)
 	if err != nil {
 		return nil, err

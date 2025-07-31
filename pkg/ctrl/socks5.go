@@ -106,11 +106,12 @@ func (m *socks5Handler) pipe(r io.Reader, w io.Writer) error {
 
 func ReplyError(conn net.Conn, err error) {
 	var rep *gosocks5.Reply
-	if errors.Is(err, core.ErrHostUnreachable) {
+	switch {
+	case errors.Is(err, core.ErrHostUnreachable):
 		rep = gosocks5.NewReply(gosocks5.HostUnreachable, nil)
-	} else if errors.Is(err, core.ErrDialFailed) {
+	case errors.Is(err, core.ErrDialFailed):
 		rep = gosocks5.NewReply(gosocks5.Failure, nil)
-	} else if errors.Is(err, core.ErrConnRefused) {
+	case errors.Is(err, core.ErrConnRefused):
 		rep = gosocks5.NewReply(gosocks5.ConnRefused, nil)
 	}
 	_ = rep.Write(conn)

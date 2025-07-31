@@ -35,7 +35,7 @@ func NewConfFromURL(proxyURL *url.URL) (*Suo5Conf, error) {
 	// 使用这些值构建配置
 	config := core.DefaultSuo5Config()
 	config.Target = fmt.Sprintf("%s://%s%s", scheme, proxyURL.Host, proxyURL.Path)
-	client, err := config.Init()
+	client, err := config.Init(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,10 @@ func NewConfFromURL(proxyURL *url.URL) (*Suo5Conf, error) {
 // Dial 实现了Client接口
 func (c *Suo5Client) Dial(network, address string) (net.Conn, error) {
 	// 创建一个新的 suo5Conn 连接
-	//conn, err := c.conf.Upstream(network, address)
-	//if err != nil {
-	//	return nil, err
-	//}
+	// conn, err := c.conf.Upstream(network, address)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	suo5Conn := &suo5Conn{
 		Suo5Conn: core.NewSuo5Conn(context.Background(), c.Conf.Suo5Client),

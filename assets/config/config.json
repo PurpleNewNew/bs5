@@ -1,0 +1,22 @@
+{
+  "method": "POST",
+  "listen": "127.0.0.1:1111",
+  "target": "http://localhost:8080/test/suo5.jsp",
+  "no_auth": true,
+  "username": "",
+  "password": "",
+  "mode": "auto",
+  "buffer_size": 327680,
+  "timeout": 10,
+  "debug": false,
+  "upstream_proxy": [],
+  "redirect_url": "",
+  "raw_header": [
+    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+  ],
+  "disable_heartbeat": false,
+  "disable_gzip": false,
+  "enable_cookiejar": false,
+  "exclude_domain": ["*.google.com", "*.facebook.com"],
+  "forward_target": ""
+}

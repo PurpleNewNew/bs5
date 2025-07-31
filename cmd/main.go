@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"strings"
 
+	"github.com/PurpleNewNew/bs5/pkg/config"
 	"github.com/PurpleNewNew/bs5/pkg/core"
 	"github.com/PurpleNewNew/bs5/pkg/ctrl"
 	log "github.com/kataras/golog"
@@ -33,7 +33,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	defaultConfig := core.DefaultSuo5Config()
 
-	rootCmd.Flags().StringP("config", "c", "", "the filepath for json config file")
+	rootCmd.Flags().StringP("config", "c", "", "the filepath for config file (json, yaml, toml)")
 	rootCmd.Flags().StringP("target", "t", defaultConfig.Target, "the remote server url, ex: http://localhost:8080/suo5.jsp")
 	rootCmd.Flags().StringP("listen", "l", defaultConfig.Listen, "listen address of socks5 server")
 	rootCmd.Flags().StringP("method", "m", defaultConfig.Method, "http request method")
@@ -54,113 +54,137 @@ func init() {
 	rootCmd.Flags().StringSliceP("exclude-domain", "E", nil, "exclude certain domain name for proxy, ex -E 'portswigger.net'")
 	rootCmd.Flags().String("exclude-domain-file", "", "exclude certain domains for proxy in a file, one domain per line")
 	rootCmd.Flags().StringP("forward", "f", defaultConfig.ForwardTarget, "forward target address, enable forward mode when specified")
-
-	rootCmd.MarkFlagRequired("target")
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	if debug, _ := cmd.Flags().GetBool("debug"); debug {
-		log.Default.SetLevel("debug")
+	// Start with a config object populated with default values
+	cfg := core.DefaultSuo5Config()
+
+	// Load config from file, overwriting defaults
+	configPath, _ := cmd.Flags().GetString("config")
+	if err := config.LoadConfig(configPath, cfg); err != nil {
+		return err
 	}
 
-	listen, _ := cmd.Flags().GetString("listen")
-	target, _ := cmd.Flags().GetString("target")
-	noAuth, _ := cmd.Flags().GetBool("no-auth")
-	auth, _ := cmd.Flags().GetString("auth")
-	modeStr, _ := cmd.Flags().GetString("mode")
-	mode := core.ConnectionType(modeStr)
-	ua, _ := cmd.Flags().GetString("ua")
-	bufSize, _ := cmd.Flags().GetInt("buf-size")
-	timeout, _ := cmd.Flags().GetInt("timeout")
-	debug, _ := cmd.Flags().GetBool("debug")
-	proxy, _ := cmd.Flags().GetStringSlice("proxy")
-	method, _ := cmd.Flags().GetString("method")
-	redirect, _ := cmd.Flags().GetString("redirect")
-	header, _ := cmd.Flags().GetStringSlice("header")
-	noHeartbeat, _ := cmd.Flags().GetBool("no-heartbeat")
-	noGzip, _ := cmd.Flags().GetBool("no-gzip")
-	jar, _ := cmd.Flags().GetBool("jar")
-	testExit, _ := cmd.Flags().GetString("test-exit")
-	exclude, _ := cmd.Flags().GetStringSlice("exclude-domain")
-	excludeFile, _ := cmd.Flags().GetString("exclude-domain-file")
-	forward, _ := cmd.Flags().GetString("forward")
-	configFile, _ := cmd.Flags().GetString("config")
-
-	var username, password string
-	if auth == "" {
-		if !noAuth {
-			username = "suo5"
-			password = core.RandString(8)
+	// Override config with command line flags
+	if cmd.Flags().Changed("target") {
+		cfg.Target, _ = cmd.Flags().GetString("target")
+	}
+	if cmd.Flags().Changed("listen") {
+		cfg.Listen, _ = cmd.Flags().GetString("listen")
+	}
+	if cmd.Flags().Changed("method") {
+		cfg.Method, _ = cmd.Flags().GetString("method")
+	}
+	if cmd.Flags().Changed("redirect") {
+		cfg.RedirectURL, _ = cmd.Flags().GetString("redirect")
+	}
+	if cmd.Flags().Changed("no-auth") {
+		cfg.NoAuth, _ = cmd.Flags().GetBool("no-auth")
+	}
+	if cmd.Flags().Changed("auth") {
+		auth, _ := cmd.Flags().GetString("auth")
+		if auth != "" {
+			parts := strings.Split(auth, ":")
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid socks credentials, expected username:password")
+			}
+			cfg.Username = parts[0]
+			cfg.Password = parts[1]
+			cfg.NoAuth = false
 		}
-	} else {
-		parts := strings.Split(auth, ":")
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid socks credentials, expected username:password")
+	}
+	if cmd.Flags().Changed("mode") {
+		modeStr, _ := cmd.Flags().GetString("mode")
+		cfg.Mode = core.ConnectionType(modeStr)
+	}
+	if cmd.Flags().Changed("ua") {
+		ua, _ := cmd.Flags().GetString("ua")
+		// Find and replace User-Agent header
+		found := false
+		for i, h := range cfg.RawHeader {
+			if strings.HasPrefix(strings.ToLower(h), "user-agent:") {
+				cfg.RawHeader[i] = "User-Agent: " + ua
+				found = true
+				break
+			}
 		}
-		username = parts[0]
-		password = parts[1]
-		noAuth = false
-	}
-	if !(mode == core.AutoDuplex || mode == core.FullDuplex || mode == core.HalfDuplex) {
-		return fmt.Errorf("invalid mode, expected auto or full or half")
-	}
-
-	if bufSize < 512 || bufSize > 1024000 {
-		return fmt.Errorf("inproper buffer size, 512~1024000")
-	}
-	header = append(header, "User-Agent: "+ua)
-
-	if excludeFile != "" {
-		data, err := os.ReadFile(excludeFile)
-		if err != nil {
-			return err
+		if !found {
+			cfg.RawHeader = append(cfg.RawHeader, "User-Agent: "+ua)
 		}
-		lines := strings.Split(string(data), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				exclude = append(exclude, line)
+	}
+	if cmd.Flags().Changed("header") {
+		headers, _ := cmd.Flags().GetStringSlice("header")
+		cfg.RawHeader = append(cfg.RawHeader, headers...)
+	}
+	if cmd.Flags().Changed("timeout") {
+		cfg.Timeout, _ = cmd.Flags().GetInt("timeout")
+	}
+	if cmd.Flags().Changed("buf-size") {
+		cfg.BufferSize, _ = cmd.Flags().GetInt("buf-size")
+	}
+	if cmd.Flags().Changed("proxy") {
+		cfg.UpstreamProxy, _ = cmd.Flags().GetStringSlice("proxy")
+	}
+	if cmd.Flags().Changed("debug") {
+		cfg.Debug, _ = cmd.Flags().GetBool("debug")
+	}
+	if cmd.Flags().Changed("no-heartbeat") {
+		cfg.DisableHeartbeat, _ = cmd.Flags().GetBool("no-heartbeat")
+	}
+	if cmd.Flags().Changed("no-gzip") {
+		cfg.DisableGzip, _ = cmd.Flags().GetBool("no-gzip")
+	}
+	if cmd.Flags().Changed("jar") {
+		cfg.EnableCookieJar, _ = cmd.Flags().GetBool("jar")
+	}
+	if cmd.Flags().Changed("test-exit") {
+		cfg.TestExit, _ = cmd.Flags().GetString("test-exit")
+	}
+	if cmd.Flags().Changed("exclude-domain") {
+		exclude, _ := cmd.Flags().GetStringSlice("exclude-domain")
+		cfg.ExcludeDomain = append(cfg.ExcludeDomain, exclude...)
+	}
+	if cmd.Flags().Changed("exclude-domain-file") {
+		excludeFile, _ := cmd.Flags().GetString("exclude-domain-file")
+		if excludeFile != "" {
+			data, err := os.ReadFile(excludeFile)
+			if err != nil {
+				return err
+			}
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					cfg.ExcludeDomain = append(cfg.ExcludeDomain, line)
+				}
 			}
 		}
 	}
-
-	config := &core.Suo5Config{
-		Listen:           listen,
-		Target:           target,
-		NoAuth:           noAuth,
-		Username:         username,
-		Password:         password,
-		Mode:             mode,
-		BufferSize:       bufSize,
-		Timeout:          timeout,
-		Debug:            debug,
-		UpstreamProxy:    proxy,
-		Method:           method,
-		RedirectURL:      redirect,
-		RawHeader:        header,
-		DisableHeartbeat: noHeartbeat,
-		DisableGzip:      noGzip,
-		EnableCookieJar:  jar,
-		TestExit:         testExit,
-		ExcludeDomain:    exclude,
-		ForwardTarget:    forward,
+	if cmd.Flags().Changed("forward") {
+		cfg.ForwardTarget, _ = cmd.Flags().GetString("forward")
 	}
 
-	if configFile != "" {
-		log.Infof("loading config from %s", configFile)
-		data, err := os.ReadFile(configFile)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(data, config)
-		if err != nil {
-			return err
-		}
+	if cfg.Debug {
+		log.Default.SetLevel("debug")
+	}
+
+	if cfg.Username == "" && !cfg.NoAuth {
+		cfg.Username = "suo5"
+		cfg.Password = core.RandString(8)
+	}
+
+	if !(cfg.Mode == core.AutoDuplex || cfg.Mode == core.FullDuplex || cfg.Mode == core.HalfDuplex) {
+		return fmt.Errorf("invalid mode, expected auto or full or half")
+	}
+
+	if cfg.BufferSize < 512 || cfg.BufferSize > 1024000 {
+		return fmt.Errorf("inproper buffer size, 512~1024000")
 	}
 
 	ctx, cancel := signalCtx()
 	defer cancel()
-	return ctrl.Run(ctx, config)
+	return ctrl.Run(ctx, cfg)
 }
 
 func signalCtx() (context.Context, func()) {

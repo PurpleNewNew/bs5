@@ -91,12 +91,11 @@ func Run(ctx context.Context, config *core.Suo5Config) error {
 		log.Infof("running in forward mode, forwarding all connections to %s", config.ForwardTarget)
 	} else {
 		// 使用 SOCKS5 模式
-		selector := server.DefaultSelector
+		var u *url.Userinfo
 		if !config.NoAuth {
-			selector = server.NewServerSelector([]*url.Userinfo{
-				url.UserPassword(config.Username, config.Password),
-			})
+			u = url.UserPassword(config.Username, config.Password)
 		}
+		selector := NewServerSelector(u)
 
 		handler = &core.ClientEventHandler{
 			Inner: &socks5Handler{
@@ -143,9 +142,13 @@ func Run(ctx context.Context, config *core.Suo5Config) error {
 // 检查代理是否真正有效, 只要能按有响应即可，尝试连一下 server 的 LocalPort, 这里写 0，在 jsp 里有判断
 func testTunnel(socks5, username, password string, timeout time.Duration) bool {
 	addr, _ := gosocks5.NewAddr("127.0.0.1:0")
-	options := []client.DialOption{client.TimeoutDialOption(timeout)}
-	if username != "" && password != "" {
-		options = append(options, client.SelectorDialOption(client.NewClientSelector(url.UserPassword(username, password))))
+	var u *url.Userinfo
+	if username != "" || password != "" {
+		u = url.UserPassword(username, password)
+	}
+	options := []client.DialOption{
+		client.TimeoutDialOption(timeout),
+		client.SelectorDialOption(NewCustomClientSelector(u)),
 	}
 
 	conn, err := client.Dial(socks5, options...)

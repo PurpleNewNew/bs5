@@ -29,3 +29,8 @@ config.yml
 
 data/
 *backup/
+
+## AI Coding
+.claude/
+CLAUDE.md
+GEMINI.md

@@ -41,7 +41,7 @@ type Suo5Config struct {
 	ExcludeDomain    []string       `json:"exclude_domain"`
 	ForwardTarget    string         `json:"forward_target"`
 
-	TestExit                string                               `json:"-"`
+	TestExit                string                               `mapstructure:"test_exit"`
 	ExcludeGlobs            []glob.Glob                          `json:"-"`
 	Offset                  int                                  `json:"-"`
 	Header                  http.Header                          `json:"-"`

@@ -105,6 +105,13 @@ func run(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
+	// If in test-and-exit mode, the target for the connection check
+	// should be the URL specified by the -T flag itself. This overrides
+	// any target from the config file.
+	if testExitURL := viper.GetString("test_exit"); testExitURL != "" {
+		cfg.Target = testExitURL
+	}
+
 	// --- Configuration Validation and Finalization ---
 
 	// Handle the 'auth' string to set username and password.

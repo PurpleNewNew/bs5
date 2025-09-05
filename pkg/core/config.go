@@ -4,12 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/PurpleNewNew/bs5/internal/proxyclient"
-	"github.com/PurpleNewNew/bs5/internal/rawhttp"
-	"github.com/PurpleNewNew/bs5/pkg/netrans"
-	"github.com/gobwas/glob"
-	log "github.com/kataras/golog"
-	utls "github.com/refraction-networking/utls"
 	"io"
 	"net"
 	"net/http"
@@ -18,6 +12,13 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/PurpleNewNew/bs5/internal/proxyclient"
+	"github.com/PurpleNewNew/bs5/internal/rawhttp"
+	"github.com/PurpleNewNew/bs5/pkg/netrans"
+	"github.com/gobwas/glob"
+	log "github.com/kataras/golog"
+	utls "github.com/refraction-networking/utls"
 )
 
 type Suo5Config struct {
@@ -309,7 +310,12 @@ func checkConnectMode(ctx context.Context, config *Suo5Config) (ConnectionType, 
 		}
 		return Undefined, 0, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Warnf("got error while closing body: %s", err)
+		}
+	}(resp.Body)
 
 	duration := time.Since(now)
 

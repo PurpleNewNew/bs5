@@ -90,9 +90,9 @@ func (c *Socks5Client) handshake(conn net.Conn) (err error) {
 	}
 	switch {
 	case auth == 2 && method == socks5AuthMethodPassword:
-		passed, err := c.passwordAuth(conn)
-		if err != nil {
-			return err
+		passed, authErr := c.passwordAuth(conn)
+		if authErr != nil {
+			return authErr
 		}
 		if !passed {
 			err = errors.New("password authentication failed.")

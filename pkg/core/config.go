@@ -286,10 +286,8 @@ func checkConnectMode(ctx context.Context, config *Suo5Config) (ConnectionType, 
 
 	// Use a goroutine to close the channel when the context is done
 	go func() {
-		select {
-		case <-checkCtx.Done():
-			close(ch)
-		}
+		<-checkCtx.Done()
+		close(ch)
 	}()
 
 	req, err := http.NewRequestWithContext(checkCtx, config.Method, config.Target, netrans.NewChannelReader(ch))

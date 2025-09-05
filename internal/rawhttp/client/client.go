@@ -124,7 +124,7 @@ func (c *client) WriteRequest(req *Request) error {
 	if l >= 0 {
 		return c.WriteBody(req.Body)
 	} else {
-		go c.WriteChunked(req.Body)
+		go func() { _ = c.WriteChunked(req.Body) }()
 		return nil
 	}
 }

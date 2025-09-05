@@ -26,8 +26,8 @@ type Handler struct {
 	client      *http.Client
 }
 
-func Serve(listener net.Listener, dial func(network, address string) (net.Conn, error)) {
-	http.Serve(listener, Handler{Dial: dial})
+func Serve(listener net.Listener, dial func(network, address string) (net.Conn, error)) error {
+	return http.Serve(listener, Handler{Dial: dial})
 }
 
 func (h Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -64,8 +64,8 @@ func (h Handler) handleConnect(writer http.ResponseWriter, request *http.Request
 	if err != nil {
 		return err
 	}
-	go io.Copy(localConn, remoteConn)
-	go io.Copy(remoteConn, localConn)
+	go func() { _, _ = io.Copy(localConn, remoteConn) }()
+	go func() { _, _ = io.Copy(remoteConn, localConn) }()
 	return nil
 }
 
@@ -96,15 +96,15 @@ func (h Handler) request(request *http.Request) (*http.Response, error) {
 	return h.client.Do(request)
 }
 
-func (h Handler) basicAuth(writer http.ResponseWriter, request *http.Request) (ok bool) {
+func (h Handler) basicAuth(writer http.ResponseWriter, request *http.Request) bool {
 	if h.Auth == nil {
-		return
+		return false
 	}
 	auth := request.Header.Get(authorization)
-	if username, password, ok := decodeBasicAuth(auth); ok {
-		ok = h.Auth(username, password)
-	} else {
-		responseUnauthorized.Write(writer)
+	username, password, ok := decodeBasicAuth(auth)
+	if !ok {
+		_ = responseUnauthorized.Write(writer)
+		return false
 	}
-	return
+	return h.Auth(username, password)
 }

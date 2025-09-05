@@ -141,12 +141,6 @@ func (request *socks5InitialRequest) ToPacket() []byte {
 	return packet
 }
 
-type socks5InitialResponse []byte
-
-func (response socks5InitialResponse) Length() int   { return len(response) }
-func (response socks5InitialResponse) Version() byte { return response[0] }
-func (response socks5InitialResponse) Auth() byte    { return response[1] }
-
 type socks5Request struct {
 	version byte
 	command byte

@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
-	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -50,17 +49,6 @@ func DialWithTimeout(timeout time.Duration) Dial {
 	return dialer.DialContext
 }
 
-func decodedBase64EncodedURL(proxy *url.URL) (*url.URL, error) {
-	if proxy.Scheme == "" && proxy.Host == "" {
-		return proxy, nil
-	}
-	content, err := base64.StdEncoding.DecodeString(proxy.Host)
-	if err == nil {
-		return proxy.Parse(proxy.Scheme + "://" + string(content))
-	}
-	return proxy, nil
-}
-
 func tlsConfigByProxyURL(proxy *url.URL) (conf *tls.Config) {
 	query := proxy.Query()
 	conf = &tls.Config{
@@ -72,7 +60,7 @@ func tlsConfigByProxyURL(proxy *url.URL) (conf *tls.Config) {
 	}
 	if caFile := query.Get("tls-ca-file"); caFile != "" {
 		certPool := x509.NewCertPool()
-		pem, err := ioutil.ReadFile(caFile)
+		pem, err := os.ReadFile(caFile)
 		if err != nil {
 			return
 		}

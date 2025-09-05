@@ -14,18 +14,21 @@ type socks4Conn struct {
 func (c *socks4Conn) Serve() (err error) {
 	request, err := readSocks4Request(c.localConn)
 	if err != nil {
-		c.sendReply(request, socks4StatusRejected)
+		_ = c.sendReply(request, socks4StatusRejected)
 		return err
 	}
 	switch request.command {
 	case commandConnect:
-		c.sendReply(request, socks4StatusGranted)
+		err = c.sendReply(request, socks4StatusGranted)
+		if err != nil {
+			return
+		}
 		err = c.handleConnect(request.Address())
 	default:
 		err = errCommandNotSupported
 	}
 	if err != nil {
-		c.sendReply(request, socks4StatusRejected)
+		_ = c.sendReply(request, socks4StatusRejected)
 	}
 	return
 }
@@ -35,12 +38,12 @@ func (c *socks4Conn) handleConnect(host string) (err error) {
 	if err != nil {
 		return err
 	}
-	go io.Copy(c.localConn, remoteConn)
-	go io.Copy(remoteConn, c.localConn)
+	go func() { _, _ = io.Copy(c.localConn, remoteConn) }()
+	go func() { _, _ = io.Copy(remoteConn, c.localConn) }()
 	return
 }
 
-func (c *socks4Conn) sendReply(request *socks4Request, status byte) {
+func (c *socks4Conn) sendReply(request *socks4Request, status byte) error {
 	response := &socks4Response{
 		status: status,
 		port:   make([]byte, 2),
@@ -50,5 +53,6 @@ func (c *socks4Conn) sendReply(request *socks4Request, status byte) {
 		response.port = request.port
 		response.ip = request.ip
 	}
-	c.localConn.Write(response.ToPacket())
+	_, err := c.localConn.Write(response.ToPacket())
+	return err
 }

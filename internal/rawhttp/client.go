@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/PurpleNewNew/bs5/internal/rawhttp/client"
 	"io"
-	"io/ioutil"
+
 	"net"
 	"net/http"
 	stdurl "net/url"
@@ -182,7 +182,7 @@ func (c *Client) do(method, url, uripath string, headers map[string][]string, bo
 
 	if resp.Status.IsRedirect() && redirectstatus.FollowRedirects && redirectstatus.Current <= redirectstatus.MaxRedirects {
 		// consume the response body
-		_, err := io.Copy(ioutil.Discard, r.Body)
+		_, err := io.Copy(io.Discard, r.Body)
 		if err := firstErr(err, r.Body.Close()); err != nil {
 			return nil, nil, err
 		}
